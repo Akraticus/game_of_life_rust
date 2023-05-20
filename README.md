@@ -1,1 +1,1 @@
-# game_of_life_rust
+# Game Of Life in Rust
