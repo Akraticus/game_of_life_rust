@@ -111,9 +111,9 @@ where
         let mut indexes = HashSet::<Index>::with_capacity(extent * 4 + 1);
         
         // we subtract one, because we always get the cell at index requested
-        let extent = extent - 1;
-        let start = self.clamp_to_grid_bounds(Index{x: index.x - extent, y: index.y - extent});
-        let end = self.clamp_to_grid_bounds(Index{x: index.x + extent, y: index.y + extent});
+        let extent = if extent > 0 { extent - 1} else {0};
+        let start = self.get_start_index(extent, &index);
+        let end = self.get_end_index(extent, &index);
 
 
         for x in start.x..=end.x{
@@ -139,7 +139,7 @@ where
         let mut indexes = HashSet::<Index>::with_capacity(extent);
         
         // we subtract one, because we always get the cell at index requested
-        let extent = min(0, extent - 1);
+        let extent = if extent > 0 { extent - 1} else {0};
 
         let start = self.get_start_index(extent, &index);
         let end = self.get_end_index(extent, &index);
@@ -170,8 +170,8 @@ where
         let width = self.get_width();
         let height = self.get_height();
         Index { 
-            x: if index.x + extent < width { index.x + extent } else { width},
-            y: if index.y + extent < height { index.y + extent } else { height }
+            x: if index.x + extent < width { index.x + extent } else { width - 1},
+            y: if index.y + extent < height { index.y + extent } else { height - 1}
         }
     }
 
@@ -241,7 +241,7 @@ fn iterate_over_grid_with_unequal_row_len_and_column_len(){
 
 #[test]
 fn get_cross_selection(){
-    let grid = Grid::from_rows(&vec![vec![0, 1, 0], vec![1, 1, 1], vec![0, 1, 0]]).unwrap();
+    let grid = Grid::from_rows(&vec![vec![0, 0, 1, 0, 0], vec![0, 0, 1, 0, 0], vec![1, 1, 1, 1, 1], vec![0, 0, 1, 0, 0], vec![0, 0, 1, 0, 0]]).unwrap();
     println!("{}", grid);
 
     // extent of 1 should just return the target index
@@ -252,7 +252,11 @@ fn get_cross_selection(){
     let selection_extent_2 = grid.get_selection_indexes(SelectionType::Cross(2), Index{x: 1, y: 1}).unwrap();
     assert_eq!(HashSet::from_iter(vec![Index{x: 0, y: 1}, Index{x: 1, y: 0}, Index{x: 1, y: 1}, Index{x: 1, y: 2}, Index{x: 2, y: 1}]), selection_extent_2);
 
-    todo!("Test the clamping to bounds of grid feature");
+    let selection_across_grid_bounds = grid.get_selection_indexes(SelectionType::Cross(2), Index{x: 0, y: 0}).unwrap();
+    assert_eq!(HashSet::from_iter(vec![Index{x: 0, y: 0}, Index{x: 0, y: 1}, Index{x: 1, y: 0},  ]), selection_across_grid_bounds);
+
+    let selection_across_grid_bounds_2 = grid.get_selection_indexes(SelectionType::Cross(2), Index{x: 4, y: 4}).unwrap();
+    assert_eq!(HashSet::from_iter(vec![Index{x: 4, y: 4}, Index{x: 4, y: 3}, Index{x: 3, y: 4},  ]), selection_across_grid_bounds_2);
 }
 
 #[test]
